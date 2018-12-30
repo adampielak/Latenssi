@@ -1,8 +1,7 @@
 # encoding: utf-8
 import time
 
-from lib import config, probe as lib_probe, rrd
-from lib.utils import sanitize
+from lib import config, probe as lib_probe, rrd, utils
 
 import os
 from jinja2 import Environment, FileSystemLoader
@@ -12,6 +11,7 @@ from bottle import Bottle
 webapp = Bottle()
 
 logger = logging.getLogger("web")
+
 
 class LatenssiTemplateGenerator(object):
     def __init__(self):
@@ -34,6 +34,7 @@ class LatenssiTemplateGenerator(object):
         logger.debug("Options: %s" % (opts,))
         tmpl = self.env.get_template(template)
         return tmpl.render(**opts).encode("utf-8")
+
 
 webgenerator = LatenssiTemplateGenerator()
 
@@ -59,7 +60,8 @@ class WebPage(object):
     def generate_intervals(self, current=None):
         ret = []
         for interval in config.intervals.keys():
-            keys = { 'active': False,
+            keys = {
+                     'active': False,
                      'link': self.get_path(interval),
                      'name': interval
                    }
@@ -75,7 +77,7 @@ class ProbeWeb(WebPage):
         self.probe = probe
 
     def get_path(self, interval=None):
-        prefix="%s" % config.relative_path
+        prefix = "%s" % config.relative_path
         if interval and interval != config.default_interval:
             interval = utils.sanitize(interval)
             return "/%s/probes/%s/%s" % (prefix.lstrip("/"), self.name, interval)
@@ -102,7 +104,8 @@ class ProbeWeb(WebPage):
                     img = '/'.join(['http:/', probe_address, 'graph/%s/?interval=%s&name=%s' % (graph, interval, self.name)])
                     graphs.append({'img': img, 'name': graph, 'title': probe_address.split("/")[0]})
             else:
-                img = os.path.join([config.relative_path, 'graph/%s/?interval=%s&name=%s' % (graph, interval, self.name)])
+                img = os.path.join(config.relative_path, 'graph/%s/?interval=%s&name=%s' % (graph, interval, self.name))
+                graphs.append({'img': img, 'name': graph, 'title': self.probe.title})
         return graphs
 
     def get_index_graph(self, interval=None):
@@ -122,6 +125,9 @@ class ProbeCache(object):
         for probe in lib_probe.probes:
             p = ProbeWeb(probe)
             self._cache[p.name] = p
+        for probe in lib_probe.multi_probes:
+            p = ProbeWeb(probe)
+            self._cache[p.name] = p
         self._last_updated = time.time()
 
     def get(self, name):
@@ -133,5 +139,6 @@ class ProbeCache(object):
     def get_all(self):
         self.update()
         return self._cache
+
 
 ProbeCache = ProbeCache()

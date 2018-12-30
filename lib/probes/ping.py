@@ -3,7 +3,7 @@
 
 from lib.rrd import RRD
 from lib import config
-from lib.probe import register_probe
+from lib.probe import register_single_probe
 from lib.probes import probe
 
 import subprocess
@@ -73,8 +73,8 @@ class Ping(probe.Probe):
         if not os.path.isfile(ping):
             logger.error("fping program %s missing, cannot start probe" % ping)
             return
-        self.p = subprocess.Popen([ping, '-Q%s' % self._count,'-c60', self.target],
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE) # Run 60sec reporting per 5 sec
+        self.p = subprocess.Popen([ping, '-Q%s' % self._count, '-c60', self.target],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # Run 60sec reporting per 5 sec
         while not self._stop:
             try:
                 line = self.p.stderr.readline()
@@ -99,4 +99,4 @@ class Ping(probe.Probe):
             return
 
 
-register_probe('ping',Ping)
+register_single_probe('ping', Ping)
